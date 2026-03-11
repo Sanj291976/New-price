@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
+  :root{--green:#1a6b3a;--green-light:#e8f5ee;--green-mid:#2d8a50;--gold:#c8972a;--gold-light:#fdf6e3;--dark:#1a1a1a;--gray:#666;--border:#c8d8c8;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Sans',sans-serif;background:#f0f4f0;min-height:100vh;}
+
+  .header{background:linear-gradient(135deg,#1a6b3a,#2d8a50);color:white;padding:12px 16px 10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.2);}
+  .header-top{display:flex;justify-content:space-between;align-items:center;}
+  .header h1{font-size:17px;font-weight:700;}
+  .header .subtitle{font-size:11px;opacity:0.85;margin-top:1px;}
+  .header-actions{display:flex;gap:8px;}
+  .btn-icon{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit;}
+
+  .month-bar{background:var(--gold-light);border-bottom:2px solid var(--gold);padding:8px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .month-bar label{font-size:12px;font-weight:600;color:var(--green);}
+  .month-bar select,.month-bar input{border:1px solid var(--gold);background:white;border-radius:6px;padding:4px 7px;font-size:12px;font-family:inherit;color:var(--dark);}
+  .month-bar input{width:120px;}
+
+  .rate-bar{background:#1a4a8a;color:white;display:grid;grid-template-columns:repeat(3,1fr);text-align:center;padding:6px 4px;}
+  .r-label{font-size:9px;opacity:0.8;text-transform:uppercase;}
+  .r-val{font-size:12px;font-weight:700;}
+
+  .grand-strip{background:var(--green);color:white;display:grid;grid-template-columns:repeat(4,1fr);text-align:center;padding:6px 4px;}
+  .gs-label{font-size:9px;opacity:0.8;text-transform:uppercase;}
+  .gs-val{font-size:13px;font-weight:700;}
+
+  .tabs{display:flex;background:white;border-bottom:2px solid var(--border);}
+  .tab-btn{flex:1;padding:9px 6px;font-size:12px;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gray);border-bottom:3px solid transparent;font-family:inherit;}
+  .tab-btn.active{color:var(--green);border-bottom-color:var(--green);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  .content{padding:10px;}
+
+  /* GROUP */
+  .grp-sec{margin-bottom:12px;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+  .grp-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;user-select:none;}
+  .g-title{font-size:14px;font-weight:700;color:white;}
+  .g-info{font-size:10px;color:rgba(255,255,255,0.85);margin-top:2px;}
+  .g-arrow{color:white;font-size:18px;transition:transform 0.2s;}
+  .grp-sec.collapsed .g-arrow{transform:rotate(-90deg);}
+  .grp-sec.collapsed .grp-body{display:none;}
+
+  .grp-r .grp-hdr{background:linear-gradient(135deg,#1a6b3a,#2d8a50);}
+  .grp-b .grp-hdr{background:linear-gradient(135deg,#1a4a8a,#2a6abf);}
+  .grp-d .grp-hdr{background:linear-gradient(135deg,#6a1a8a,#9a3abf);}
+  .grp-r .entry-row:nth-child(even){background:#e8f5ee;}
+  .grp-b .entry-row:nth-child(even){background:#e8eef8;}
+  .grp-d .entry-row:nth-child(even){background:#f3e8f8;}
+
+  .grp-body{background:white;padding:6px;}
+
+  /* ENTRY ROW - two line layout */
+  .entry-row{border-bottom:1px solid var(--border);padding:5px 4px;}
+  .entry-row:last-child{border-bottom:none;}
+  .entry-top{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+  .entry-num{color:var(--gray);font-size:10px;font-weight:700;min-width:18px;}
+  .entry-name input{flex:1;width:100%;border:1px solid transparent;background:transparent;font-size:12px;font-weight:600;font-family:inherit;color:var(--dark);padding:2px 3px;border-radius:4px;}
+  .entry-name input:focus{outline:none;background:white;border-color:#aaa;}
+  .del-btn{background:none;border:none;color:#e74c3c;font-size:13px;cursor:pointer;padding:1px 3px;margin-left:auto;}
+
+  .entry-bottom{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;padding-left:24px;}
+  .qty-box{display:flex;flex-direction:column;align-items:center;}
+  .qty-label{font-size:9px;color:var(--gray);text-transform:uppercase;font-weight:600;}
+  .qty-input input{width:100%;border:1px solid var(--border);background:white;font-size:12px;font-family:inherit;text-align:center;padding:3px 2px;border-radius:5px;color:var(--dark);}
+  .qty-input input:focus{outline:none;border-color:#aaa;box-shadow:0 0 0 2px rgba(0,0,0,0.06);}
+  .qty-amt{font-size:10px;font-weight:700;text-align:center;margin-top:1px;}
+  .amt-dal{color:#8a4a00;}
+  .amt-sug{color:#1a4a8a;}
+  .amt-sal{color:#6a1a8a;}
+  .amt-tot{color:var(--green);font-size:11px;}
+
+  /* TOTAL ROW */
+  .grp-total{background:#f8f8f8;border-top:2px solid var(--border);padding:7px 8px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;margin-top:4px;border-radius:0 0 8px 8px;}
+  .gt-item{text-align:center;}
+  .gt-label{font-size:9px;color:var(--gray);text-transform:uppercase;font-weight:600;}
+  .gt-val{font-size:12px;font-weight:700;color:var(--green);}
+
+  .add-btn-r{display:block;width:100%;margin-top:8px;padding:9px;background:#e8f5ee;border:2px dashed #2d8a50;border-radius:8px;color:#1a6b3a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center;}
+  .add-btn-b{display:block;width:100%;margin-top:8px;padding:9px;background:#e8eef8;border:2px dashed #2a6abf;border-radius:8px;color:#1a4a8a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center;}
+  .add-btn-d{display:block;width:100%;margin-top:8px;padding:9px;background:#f3e8f8;border:2px dashed #9a3abf;border-radius:8px;color:#6a1a8a;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center;}
+
+  /* SUMMARY */
+  .sum-card{background:white;border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,0.08);}
+  .sum-card h3{font-size:13px;color:var(--green);font-weight:700;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+  .sr{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px;}
+  .sr:last-child{border-bottom:none;}
+  .gr-row{border-radius:8px;padding:9px 13px;display:flex;justify-content:space-between;font-weight:700;color:white;margin-bottom:8px;font-size:13px;}
+
+  /* HISTORY */
+  .hist-list{background:white;border-radius:10px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08);}
+  .hi{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;}
+  .hi:last-child{border-bottom:none;}
+  .hi:active{background:var(--green-light);}
+  .no-hist{text-align:center;padding:30px;color:var(--gray);font-size:13px;}
+
+  /* PRINT */
+  @media print{
+    .header,.month-bar,.tabs,.del-btn,.no-print,.grand-strip,.rate-bar{display:none!important;}
+    .content{padding:0;}
+    .tab-content{display:block!important;}
+    .print-hdr{display:block!important;}
+    .grp-sec.collapsed .grp-body{display:block!important;}
+    .qty-input input{border:none!important;background:transparent!important;}
+    .entry-name input{border:none!important;background:transparent!important;}
+    .grp-sec{box-shadow:none;border:1px solid #ccc;margin-bottom:10px;page-break-inside:avoid;}
+    .grp-hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+  .print-hdr{display:none;text-align:center;margin-bottom:10px;}
+  .print-hdr h2{font-size:15px;font-weight:700;}
+  .print-hdr p{font-size:11px;color:var(--gray);}
+</style>
+</head>
+<body>
+
+<a href="https://epos.assam.gov.in/FPS_Status" target="_blank" style="display:block;background:#c8972a;color:#1a1a1a;text-align:center;padding:7px 12px;font-size:12px;font-weight:700;text-decoration:none;letter-spacing:0.3px;">🌐 ePOS Assam — FPS Status &nbsp;↗</a>
+<div class="header no-print">
+  <div class="header-top">
+    <div>
+      <h1>🛒 Stock Calculator</h1>
+      <div class="subtitle">Dal · Sugar · Salt — FPS Distribution</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="printApp()">🖨</button>
+      <button class="btn-icon" onclick="saveAll()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="month-bar no-print">
+  <label>Month:</label>
+  <select id="monthSel" onchange="loadMonth()">
+    <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+    <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+    <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+    <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+  </select>
+  <select id="yearSel" onchange="loadMonth()">
+    <option value="2024">2024</option><option value="2025">2025</option>
+    <option value="2026" selected>2026</option><option value="2027">2027</option>
+  </select>
+  <input type="text" id="shopName" placeholder="Shop Name" value="Mukesh FPS">
+</div>
+
+<div class="rate-bar no-print">
+  <div><div class="r-label">Dal</div><div class="r-val">₹58/kg</div></div>
+  <div><div class="r-label">Salt</div><div class="r-val">₹8/kg</div></div>
+  <div><div class="r-label">Sugar</div><div class="r-val">₹28/kg</div></div>
+</div>
+
+<div class="grand-strip no-print">
+  <div><div class="gs-label">Entries</div><div class="gs-val" id="gE">0</div></div>
+  <div><div class="gs-label">Dal kg</div><div class="gs-val" id="gD">0.00</div></div>
+  <div><div class="gs-label">Salt kg</div><div class="gs-val" id="gS">0.00</div></div>
+  <div><div class="gs-label">Total ₹</div><div class="gs-val" id="gT">0.00</div></div>
+</div>
+
+<div class="tabs no-print">
+  <button class="tab-btn active" onclick="switchTab('tally')">📋 Tally</button>
+  <button class="tab-btn" onclick="switchTab('summary')">📊 Summary</button>
+  <button class="tab-btn" onclick="switchTab('history')">🗂 History</button>
+</div>
+
+<div class="content">
+  <div id="tab-tally" class="tab-content active">
+    <div class="print-hdr"><h2 id="pTitle">Stock Calculator</h2><p id="pSub">Dal · Sugar · Salt</p></div>
+
+    <!-- ROHMARIA -->
+    <div class="grp-sec grp-r" id="grp-r">
+      <div class="grp-hdr" onclick="toggleGrp('r')">
+        <div><div class="g-title">🛒 ROHMARIA</div><div class="g-info" id="gi-r">30 rows</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="no-print" onclick="event.stopPropagation();shareGrpWhatsApp('r')" style="background:#25D366;border:none;color:white;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">📤 Share List</button>
+          <div class="g-arrow">▾</div>
+        </div>
+      </div>
+      <div class="grp-body">
+        <div id="list-r"></div>
+        <div class="grp-total" id="gtot-r">
+          <div class="gt-item"><div class="gt-label">Dal kg</div><div class="gt-val" id="gtDq-r">0.00</div></div>
+          <div class="gt-item"><div class="gt-label">Salt kg</div><div class="gt-val" id="gtSlq-r">0.00</div></div>
+          <div class="gt-item"><div class="gt-label">Sugar kg</div><div class="gt-val" id="gtSq-r">0.00</div></div>
+          <div class="gt-item"><div class="gt-label">Total ₹</div><div class="gt-val" id="gtT-r">0.00</div></div>
+        </div>
+        <button class="add-btn-r no-print" onclick="addRow('r')">+ Add Row</button>
+      </div>
+    </div>
+
+    <!-- BOKUL -->
+    <div class="grp-sec grp-b" id="grp-b">
+      <div class="grp-hdr" onclick="toggleGrp('b')">
+        <div><div class="g-title">🛒 BOKUL</div><div class="g-info" id="gi-b">30 rows</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="no-print" onclick="event.stopPropagation();shareGrpWhatsApp('b')" style="background:#25D366;border:none;color:white;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">📤 Share List</button>
+          <div class="g-arrow">▾</div>
+        </div>
+      </div>
+      <div class="grp-body">
+        <div id="list-b"></div>
+        <div class="grp-total">
+          <div class="gt-item"><div class="gt-label">Dal kg</div><div class="gt-val" id="gtDq-b">0.00</div></div>
+          <div class="gt-item"><div class="gt-label">Salt kg</div><div class="gt-val" id="gtSlq-b">0.00</div></div>
+          <div class="gt-item"><div class="gt-label">Sugar kg</div><div class="gt-val" id="gtSq-b">0.00</div></div>
+          <div class="gt-item"><div class="gt-label">Total ₹</div><div class="gt-val" id="gtT-b">0.00</div></div>
+        </div>
+        <button class="add-btn-b no-print" onclick="addRow('b')">+ Add Row</button>
+      </div>
+    </div>
+
+    <!-- DWCCS -->
+    <div class="grp-sec grp-d" id="grp-d">
+      <div class="grp-hdr" onclick="toggleGrp('d')">
+        <div><div class="g-title">🛒 DWCCS</div><div class="g-info" id="gi-d">11 rows</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="no-print" onclick="event.stopPropagation();shareGrpWhatsApp('d')" style="background:#25D366;border:none;color:white;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">📤 Share List</button>
+          <div class="g-arrow">▾</div>
+        </div>
+      </div>
+      <div class="grp-body">
+        <div id="list-d"></div>
+        <div class="grp-total">
+          <div class="gt-item"><div class="gt-label">Dal kg</div><div class="gt-val" id="gtDq-d">0.00</div></div>
+          <div class="gt-item"><div class="gt-label">Salt kg</div><div class="gt-val" id="gtSlq-d">0.00</div></div>
+          <div class="gt-item"><div class="gt-label">Sugar kg</div><div class="gt-val" id="gtSq-d">0.00</div></div>
+          <div class="gt-item"><div class="gt-label">Total ₹</div><div class="gt-val" id="gtT-d">0.00</div></div>
+        </div>
+        <button class="add-btn-d no-print" onclick="addRow('d')">+ Add Row</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div id="tab-summary" class="tab-content">
+    <div class="sum-card"><h3>📊 Grand Summary — <span id="sumTitle"></span></h3><div id="grandSum"></div></div>
+    <div class="sum-card"><h3>🛒 Group Wise</h3><div id="grpSum"></div></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="tab-history" class="tab-content">
+    <div style="margin-bottom:10px;"><strong style="font-size:13px;color:var(--green);">🗂 Saved Months</strong></div>
+    <div class="hist-list" id="histList"><div class="no-hist">No saved months yet</div></div>
+  </div>
+</div>
+
+<script>
+  const SK='stock_v4';
+  const DAL=58,SALT=8,SUGAR=28;
+  const GS=['r','b','d'];
+  const GNAMES={r:'Rohmaria',b:'Bokul',d:'DWCCS'};
+  const GCOL={r:'#1a6b3a',b:'#1a4a8a',d:'#6a1a8a'};
+  const DEFN={r:30,b:30,d:11};
+  let D={r:[],b:[],d:[]};
+
+  const DWCCS_NAMES=[
+    'SAMIR KR DEY','UTPAL SENGUPTA','M/S REE ENTERPRISE (KHAGEN SONOWAL)',
+    'NOOR RAHIM','MOLOY KANTI CHAKRABORTY (M/S M.K.Enterprise)','SRI MUKUNDA DAS',
+    'KRISHNA DEY','M/S LAXMI ENTERPRIESE','RAILWAY CONSUMER CO OP SOCIETY DBR',
+    'KRISHNA & BISHNU DEBNATH','PRAKASH SHARMA'
+  ];
+
+  const ROHMARIA_DATA=[
+    {name:'Jadab dutta',dal:'133',salt:'133',sugar:'133'},
+    {name:'Suchil Saikia',dal:'222',salt:'223',sugar:'223'},
+    {name:'Durlov Gogoi',dal:'171',salt:'171',sugar:'171'},
+    {name:'Lambeswar chatradhar',dal:'175',salt:'176',sugar:'175'},
+    {name:'Juran das',dal:'172',salt:'171',sugar:'173'},
+    {name:'Ranjan dutta',dal:'195',salt:'195',sugar:'196'},
+    {name:'Apurba kr Das',dal:'142',salt:'142',sugar:'142'},
+    {name:'Aneswar das',dal:'132',salt:'133',sugar:'132'},
+    {name:'Mira kurmi',dal:'106',salt:'106',sugar:'106'},
+    {name:'Amio gohain',dal:'140',salt:'140',sugar:'140'},
+    {name:'Prabin saikia',dal:'120',salt:'120',sugar:'120'},
+    {name:'Kanaklata saikia',dal:'156',salt:'155',sugar:'157'},
+    {name:'Gohen gogoi',dal:'201',salt:'201',sugar:'201'},
+    {name:'Punaram konch',dal:'163',salt:'162',sugar:'163'},
+    {name:'Numal dangoria',dal:'176',salt:'176',sugar:'176'},
+    {name:'Prabitra gohain',dal:'190',salt:'190',sugar:'190'},
+    {name:'Kameswar chetia',dal:'169',salt:'156',sugar:'169'},
+    {name:'Binu boruah',dal:'149',salt:'139',sugar:'149'},
+    {name:'Dipen gogoi',dal:'219',salt:'218',sugar:'230'},
+    {name:'Rezina murah',dal:'174',salt:'175',sugar:'175'},
+    {name:'M/s Paramananda entp',dal:'270',salt:'269',sugar:'270'},
+    {name:'Sobha keshri',dal:'286',salt:'285',sugar:'289'},
+    {name:'Subal kairi',dal:'165',salt:'165',sugar:'166'},
+    {name:'Utpal gogoi',dal:'171',salt:'170',sugar:'171'},
+    {name:'Ghana kt dutta',dal:'155',salt:'155',sugar:'155'},
+    {name:'Atmaram agarwala',dal:'380',salt:'380',sugar:'380'},
+    {name:'J P Dhamuka',dal:'165',salt:'164',sugar:'164'},
+    {name:'Rejina Begum',dal:'176',salt:'172',sugar:'172'},
+    {name:'Deepjyoti Das',dal:'231',salt:'231',sugar:'231'},
+    {name:'Sumadhar Dutta',dal:'55',salt:'55',sugar:'55'},
+  ];
+
+  const BOKUL_DATA=[
+    {name:'Swargajyoti patra',dal:'209',salt:'210',sugar:'210'},
+    {name:'Debo kt neog',dal:'217',salt:'217',sugar:'217'},
+    {name:'Biswajit mech',dal:'140',salt:'139',sugar:'140'},
+    {name:'Joy prakash shah',dal:'114',salt:'114',sugar:'114'},
+    {name:'Gubin mech',dal:'110',salt:'110',sugar:'110'},
+    {name:'Gunadhar gogoi',dal:'50',salt:'36',sugar:'46'},
+    {name:'Dipak gurung',dal:'116',salt:'116',sugar:'116'},
+    {name:'Janaklal patwari',dal:'131',salt:'131',sugar:'132'},
+    {name:'Achala keshri',dal:'62',salt:'61',sugar:'61'},
+    {name:'Karuna bhaju',dal:'479',salt:'479',sugar:'479'},
+    {name:'Noor Hussain',dal:'119',salt:'119',sugar:'119'},
+    {name:'Tanbi ahmed',dal:'271',salt:'270',sugar:'271'},
+    {name:'Numal gogoi',dal:'160',salt:'160',sugar:'160'},
+    {name:'Tahir Ahmed',dal:'169',salt:'169',sugar:'169'},
+    {name:'Hira hazarika',dal:'137',salt:'137',sugar:'137'},
+    {name:'Tijen chetia',dal:'81',salt:'81',sugar:'81'},
+    {name:'Paban munda',dal:'126',salt:'126',sugar:'129'},
+    {name:'Jayanta hazarika',dal:'262',salt:'262',sugar:'262'},
+    {name:'Nabi hussain',dal:'108',salt:'109',sugar:'112'},
+    {name:'Salimullah shaikh',dal:'123',salt:'114',sugar:'115'},
+    {name:'Abdul kadir',dal:'78',salt:'79',sugar:'79'},
+    {name:'Lena chetia',dal:'155',salt:'154',sugar:'155'},
+    {name:'Bhadra kt gohain',dal:'63',salt:'63',sugar:'63'},
+    {name:'Sakhina begum',dal:'141',salt:'141',sugar:'141'},
+    {name:'Dinesh das',dal:'98',salt:'90',sugar:'99'},
+    {name:'Manjumoni phukon',dal:'119',salt:'117',sugar:'119'},
+    {name:'Jitu kr das',dal:'163',salt:'156',sugar:'165'},
+    {name:'Ajanta hazarika',dal:'116',salt:'116',sugar:'116'},
+    {name:'Monuj gogoi',dal:'212',salt:'213',sugar:'213'},
+    {name:'B C JAIN',dal:'68',salt:'68',sugar:'69'},
+  ];
+
+  function pf(s){return parseFloat(String(s).replace(',','.'))||0;}
+  function fm(n){return n.toFixed(2);}
+  function mkRows(n){const a=[];for(let i=0;i<n;i++)a.push({name:'',dal:'',sugar:'',salt:''});return a;}
+  function mkDwccs(){return DWCCS_NAMES.map(n=>({name:n,dal:'',sugar:'',salt:''}));}
+
+  window.onload=()=>{
+    const now=new Date();
+    document.getElementById('monthSel').value=now.getMonth()+1;
+    loadMonth();
+  };
+
+  function getKey(){
+    return `${SK}_${document.getElementById('yearSel').value}_${String(document.getElementById('monthSel').value).padStart(2,'0')}`;
+  }
+  function getML(){
+    const mn=['','January','February','March','April','May','June','July','August','September','October','November','December'];
+    return `${mn[document.getElementById('monthSel').value]} ${document.getElementById('yearSel').value}`;
+  }
+
+  function loadMonth(){
+    try{
+      const sv=localStorage.getItem(getKey());
+      if(sv){const d=JSON.parse(sv);D={r:d.r||JSON.parse(JSON.stringify(ROHMARIA_DATA)),b:d.b||JSON.parse(JSON.stringify(BOKUL_DATA)),d:d.d||mkDwccs()};document.getElementById('shopName').value=d.sn||'Mukesh FPS';}
+      else{D={r:JSON.parse(JSON.stringify(ROHMARIA_DATA)),b:JSON.parse(JSON.stringify(BOKUL_DATA)),d:mkDwccs()};}
+    }catch(e){D={r:JSON.parse(JSON.stringify(ROHMARIA_DATA)),b:JSON.parse(JSON.stringify(BOKUL_DATA)),d:mkDwccs()};}
+    GS.forEach(g=>renderGrp(g));updateStrip();updateSumTab();renderHist();
+  }
+
+  function saveAll(){
+    try{localStorage.setItem(getKey(),JSON.stringify({r:D.r,b:D.b,d:D.d,sn:document.getElementById('shopName').value,ml:getML()}));renderHist();}catch(e){}
+    showToast('✅ Saved!');
+  }
+
+  function addRow(g){
+    D[g].push({name:'',dal:'',sugar:'',salt:''});
+    renderGrp(g);updateStrip();
+    setTimeout(()=>{const inp=document.querySelectorAll(`#list-${g} .ni`);if(inp.length)inp[inp.length-1].focus();},50);
+  }
+
+  function delRow(g,i){D[g].splice(i,1);renderGrp(g);updateStrip();updateSumTab();autos();}
+
+  function onC(g,i,f,v){
+    D[g][i][f]=v;
+    const r=D[g][i];
+    const da=pf(r.dal)*DAL,sa=pf(r.sugar)*SUGAR,sla=pf(r.salt)*SALT,tot=da+sa+sla;
+    const s=(id,val,zero)=>{const el=document.getElementById(id);if(el)el.textContent=val>0?fm(val):(zero||'');};
+    s(`amt-dal-${g}-${i}`,da,'');s(`amt-sug-${g}-${i}`,sa,'');s(`amt-sal-${g}-${i}`,sla,'');s(`amt-tot-${g}-${i}`,tot,'');
+    updateGrpTot(g);updateStrip();updateSumTab();autos();
+  }
+
+  function shareGrpWhatsApp(g){
+    const shop=document.getElementById('shopName').value||'Mukesh FPS';
+    const ml=getML();
+    const gname=GNAMES[g].toUpperCase();
+    let msg=`🛒 *${shop}* — ${ml}\n`;
+    msg+=`📋 *${gname} GROUP LIST*\n`;
+    msg+=`━━━━━━━━━━━━━━━━\n`;
+    let tot=0,num=0;
+    D[g].forEach((r,i)=>{
+      if(!r.name&&!r.dal&&!r.salt&&!r.sugar) return;
+      num++;
+      const da=pf(r.dal)*DAL,sla=pf(r.salt)*SALT,sa=pf(r.sugar)*SUGAR,rt=da+sla+sa;
+      tot+=rt;
+      msg+=`*${num}. ${r.name||'—'}*\n`;
+      if(pf(r.dal)>0)  msg+=`   🌾 Dal: ${r.dal}kg = ₹${fm(da)}\n`;
+      if(pf(r.salt)>0) msg+=`   🧂 Salt: ${r.salt}kg = ₹${fm(sla)}\n`;
+      if(pf(r.sugar)>0)msg+=`   🍚 Sugar: ${r.sugar}kg = ₹${fm(sa)}\n`;
+      msg+=`   💰 ₹${fm(rt)}\n`;
+    });
+    msg+=`━━━━━━━━━━━━━━━━\n`;
+    msg+=`👥 Members: ${num}\n`;
+    msg+=`💵 *Grand Total: ₹${fm(tot)}*`;
+    window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  }
+
+  function shareWhatsApp(g,i){
+    const r=D[g][i];
+    const name=r.name||`Person ${i+1}`;
+    const da=pf(r.dal)*DAL,sla=pf(r.salt)*SALT,sa=pf(r.sugar)*SUGAR,tot=da+sla+sa;
+    const shop=document.getElementById('shopName').value||'Mukesh FPS';
+    const ml=getML();
+    let msg=`🛒 *${shop}* — ${ml}\n`;
+    msg+=`👤 *${name}*\n`;
+    msg+=`━━━━━━━━━━━━━\n`;
+    if(pf(r.dal)>0) msg+=`🌾 Dal: ${r.dal} kg — ₹${fm(da)}\n`;
+    if(pf(r.salt)>0) msg+=`🧂 Salt: ${r.salt} kg — ₹${fm(sla)}\n`;
+    if(pf(r.sugar)>0) msg+=`🍚 Sugar: ${r.sugar} kg — ₹${fm(sa)}\n`;
+    msg+=`━━━━━━━━━━━━━\n`;
+    msg+=`💰 *Total: ₹${fm(tot)}*`;
+    const url='https://wa.me/?text='+encodeURIComponent(msg);
+    window.open(url,'_blank');
+  }
+
+  function renderGrp(g){
+    const list=document.getElementById(`list-${g}`);
+    list.innerHTML='';
+    D[g].forEach((row,i)=>{
+      const da=pf(row.dal)*DAL,sa=pf(row.sugar)*SUGAR,sla=pf(row.salt)*SALT,tot=da+sa+sla;
+      const div=document.createElement('div');
+      div.className='entry-row';
+      div.innerHTML=`
+        <div class="entry-top">
+          <span class="entry-num">${i+1}</span>
+          <div class="entry-name" style="flex:1;">
+            <input type="text" inputmode="text" class="ni" value="${row.name||''}" placeholder="Name"
+              oninput="onC('${g}',${i},'name',this.value)">
+          </div>
+          <button class="del-btn no-print" onclick="shareWhatsApp('${g}',${i})" title="Share on WhatsApp" style="color:#25D366;font-size:15px;">📤</button>
+          <button class="del-btn no-print" onclick="delRow('${g}',${i})">✕</button>
+        </div>
+        <div class="entry-bottom">
+          <div class="qty-box">
+            <div class="qty-label">Dal kg</div>
+            <div class="qty-input"><input type="text" inputmode="decimal" value="${row.dal||''}" placeholder="0"
+              oninput="onC('${g}',${i},'dal',this.value)"></div>
+            <div class="qty-amt amt-dal" id="amt-dal-${g}-${i}">${da>0?fm(da):''}</div>
+          </div>
+          <div class="qty-box">
+            <div class="qty-label">Salt kg</div>
+            <div class="qty-input"><input type="text" inputmode="decimal" value="${row.salt||''}" placeholder="0"
+              oninput="onC('${g}',${i},'salt',this.value)"></div>
+            <div class="qty-amt amt-sal" id="amt-sal-${g}-${i}">${sla>0?fm(sla):''}</div>
+          </div>
+          <div class="qty-box">
+            <div class="qty-label">Sugar kg</div>
+            <div class="qty-input"><input type="text" inputmode="decimal" value="${row.sugar||''}" placeholder="0"
+              oninput="onC('${g}',${i},'sugar',this.value)"></div>
+            <div class="qty-amt amt-sug" id="amt-sug-${g}-${i}">${sa>0?fm(sa):''}</div>
+          </div>
+          <div class="qty-box">
+            <div class="qty-label">Total ₹</div>
+            <div style="height:24px;"></div>
+            <div class="qty-amt amt-tot" id="amt-tot-${g}-${i}" style="font-size:12px;">${tot>0?fm(tot):''}</div>
+          </div>
+        </div>`;
+      list.appendChild(div);
+    });
+    updateGrpTot(g);
+    document.getElementById(`gi-${g}`).textContent=`${D[g].length} rows · Total ₹${fm(D[g].reduce((s,r)=>s+pf(r.dal)*DAL+pf(r.sugar)*SUGAR+pf(r.salt)*SALT,0))}`;
+  }
+
+  function updateGrpTot(g){
+    let dq=0,sq=0,slq=0,tot=0;
+    D[g].forEach(r=>{dq+=pf(r.dal);sq+=pf(r.sugar);slq+=pf(r.salt);tot+=pf(r.dal)*DAL+pf(r.sugar)*SUGAR+pf(r.salt)*SALT;});
+    document.getElementById(`gtDq-${g}`).textContent=fm(dq);
+    document.getElementById(`gtSq-${g}`).textContent=fm(sq);
+    document.getElementById(`gtSlq-${g}`).textContent=fm(slq);
+    document.getElementById(`gtT-${g}`).textContent=fm(tot);
+  }
+
+  function updateStrip(){
+    let e=0,dq=0,sq=0,tot=0;
+    GS.forEach(g=>{D[g].forEach(r=>{
+      if(r.name||r.dal||r.sugar||r.salt)e++;
+      dq+=pf(r.dal);sq+=pf(r.sugar);tot+=pf(r.dal)*DAL+pf(r.sugar)*SUGAR+pf(r.salt)*SALT;
+    });});
+    document.getElementById('gE').textContent=e;
+    document.getElementById('gD').textContent=fm(dq);
+    document.getElementById('gS').textContent=fm(sq);
+    document.getElementById('gT').textContent=fm(tot);
+  }
+
+  function updateSumTab(){
+    document.getElementById('sumTitle').textContent=getML();
+    let tdq=0,tsq=0,tslq=0,tda=0,tsa=0,tsla=0,te=0;
+    const gd={};
+    GS.forEach(g=>{
+      let dq=0,sq=0,slq=0,tot=0,e=0;
+      D[g].forEach(r=>{if(r.name||r.dal||r.sugar||r.salt)e++;dq+=pf(r.dal);sq+=pf(r.sugar);slq+=pf(r.salt);tot+=pf(r.dal)*DAL+pf(r.sugar)*SUGAR+pf(r.salt)*SALT;});
+      gd[g]={dq,sq,slq,tot,e};tdq+=dq;tsq+=sq;tslq+=slq;tda+=dq*DAL;tsa+=sq*SUGAR;tsla+=slq*SALT;te+=e;
+    });
+    document.getElementById('grandSum').innerHTML=`
+      <div class="sr"><span>Total Entries</span><span style="font-weight:700">${te}</span></div>
+      <div class="sr"><span>Dal Qty</span><span style="font-weight:700;color:#8a4a00">${fm(tdq)} kg · ₹${fm(tda)}</span></div>
+      <div class="sr"><span>Salt Qty</span><span style="font-weight:700;color:#6a1a8a">${fm(tslq)} kg · ₹${fm(tsla)}</span></div>
+      <div class="sr"><span>Sugar Qty</span><span style="font-weight:700;color:#1a4a8a">${fm(tsq)} kg · ₹${fm(tsa)}</span></div>
+      <div class="gr-row" style="background:#333"><span>Grand Total</span><span>₹${fm(tda+tsa+tsla)}</span></div>`;
+    document.getElementById('grpSum').innerHTML=GS.map(g=>`
+      <div class="gr-row" style="background:${GCOL[g]}"><span>${GNAMES[g]}</span><span>₹${fm(gd[g].tot)}</span></div>
+      <div style="font-size:11px;color:var(--gray);margin:-4px 0 10px 2px;">${gd[g].e} entries · Dal ${fm(gd[g].dq)}kg · Sugar ${fm(gd[g].sq)}kg · Salt ${fm(gd[g].slq)}kg</div>`).join('');
+  }
+
+  function toggleGrp(g){document.getElementById(`grp-${g}`).classList.toggle('collapsed');}
+
+  function renderHist(){
+    const list=document.getElementById('histList');
+    const keys=[];
+    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(SK+'_'))keys.push(k);}
+    keys.sort().reverse();
+    if(!keys.length){list.innerHTML='<div class="no-hist">No saved months yet</div>';return;}
+    list.innerHTML=keys.map(k=>{
+      const d=JSON.parse(localStorage.getItem(k));let tot=0,e=0;
+      GS.forEach(g=>{if(d[g])d[g].forEach(r=>{if(r.name||r.dal||r.sugar||r.salt){e++;tot+=pf(r.dal)*DAL+pf(r.sugar)*SUGAR+pf(r.salt)*SALT;}});});
+      return `<div class="hi" onclick="loadKey('${k}')"><div><div style="font-weight:600;font-size:13px">${d.ml||k}</div><div style="font-size:11px;color:var(--gray)">${e} entries · ₹${fm(tot)}</div></div><div style="color:var(--green);font-size:18px">›</div></div>`;
+    }).join('');
+  }
+
+  function loadKey(key){
+    const d=JSON.parse(localStorage.getItem(key));const p=key.split('_');
+    document.getElementById('yearSel').value=p[p.length-2];
+    document.getElementById('monthSel').value=parseInt(p[p.length-1]);
+    D={r:d.r||mkRows(30),b:d.b||mkRows(30),d:d.d||mkRows(11)};
+    document.getElementById('shopName').value=d.sn||'Mukesh FPS';
+    GS.forEach(g=>renderGrp(g));updateStrip();updateSumTab();switchTab('tally');
+  }
+
+  function switchTab(name){
+    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('tab-'+name).classList.add('active');
+    [{tally:0,summary:1,history:2}[name]].forEach(i=>document.querySelectorAll('.tab-btn')[i].classList.add('active'));
+    if(name==='summary')updateSumTab();if(name==='history')renderHist();
+  }
+
+  function printApp(){
+    document.getElementById('pTitle').textContent=document.getElementById('shopName').value+' — Stock Calculator';
+    document.getElementById('pSub').textContent='Dal · Sugar · Salt — '+getML();
+    window.print();
+  }
+
+  let st;
+  function autos(){clearTimeout(st);st=setTimeout(saveAll,1200);}
+
+  function showToast(msg){
+    let t=document.getElementById('toast');
+    if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a6b3a;color:white;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;';document.body.appendChild(t);}
+    t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',1800);
+  }
+</script>
+</body>
+</html>
